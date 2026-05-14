@@ -1,0 +1,28 @@
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment folder
+venv/
+.venv/
+
+# MLflow experiment data which is generated locally during training runs
+mlruns/
+mlartifacts/
+
+# Evidently report data 
+data/reports/
+
+# VS Code settings(not part of the project)
+.vscode/
+
+# Raw data files
+data/raw/
+data/features/
+
+# Logs
+*.log
