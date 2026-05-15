@@ -1,6 +1,6 @@
 # Data & streaming
-kafka-python==2.0.2
-psycopg2-binary==2.9.9
+kafka-python-ng==2.2.3
+psycopg2-binary==2.9.11
 sqlalchemy==2.0.36
 pandas==2.2.3
 pyarrow==18.1.0
