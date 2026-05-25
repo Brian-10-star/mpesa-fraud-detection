@@ -1,7 +1,6 @@
 # behavioral_features.py
 # Looks at patterns in WHO the sender transacts with and HOW.
-# Account takeover fraud often shows: new device, new location,
-# sending to many different people rapidly.
+# Account takeover fraud often shows: new device, new location, sending to many different people rapidly.
 
 from sqlalchemy import text
 from datetime import datetime

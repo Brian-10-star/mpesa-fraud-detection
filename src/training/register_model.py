@@ -1,8 +1,5 @@
 # register_model.py
-# Takes the best performing model and registers it in MLflow's
-# model registry with the stage "Staging".
-# In a real company, a data scientist would review it and promote
-# it to "Production" after manual validation.
+# Takes the best performing model and registers it in MLflow's model registry with the stage "Staging".
 
 import mlflow
 from mlflow.tracking import MlflowClient

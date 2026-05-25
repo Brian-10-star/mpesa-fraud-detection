@@ -1,7 +1,5 @@
 # evaluate.py
 # Computes evaluation metrics for a trained model.
-# For fraud detection, we care most about recall and F1 —
-# missing real fraud is more costly than a false alarm.
 
 from sklearn.metrics import (
     accuracy_score, precision_score, recall_score,
@@ -22,7 +20,7 @@ def evaluate_model(model, X_test, y_test) -> dict:
     - Accuracy: % of all predictions that were correct
     - Precision: of predicted fraud, % that were actually fraud
     - Recall: of actual fraud, % that we caught
-    - F1: harmonic mean of precision and recall — balances both
+    - F1: harmonic mean of precision and recall and balances them into one score
     - ROC-AUC: area under the ROC curve — 0.5=random, 1.0=perfect
     - Confusion matrix: [[TN, FP], [FN, TP]]
       TN=correct legit, FP=false alarm, FN=missed fraud, TP=caught fraud

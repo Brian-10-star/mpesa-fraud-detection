@@ -1,0 +1,144 @@
+# ci.yml
+# GitHub Actions CI workflow.
+# Runs automatically on every push and pull request to main branch.
+
+# GitHub Actions is a CI/CD platform built into GitHub.
+# A workflow is a YAML file that defines:
+# - WHEN to run (on: push, pull_request)
+# - WHERE to run (runs-on: ubuntu-latest which is a fresh Linux VM)
+# - WHAT to run (steps: install dependencies, run tests)
+#
+# Every time you push to GitHub, this workflow spins up a fresh Ubuntu machine, installs your dependencies, and runs your tests.
+# Pass = green checkmark. Fail = red cross + email notification.
+
+name: CI — Fraud Detection Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # ubuntu-latest is a fresh virtual machine provided by GitHub
+    # It has Python, pip, and git pre-installed
+
+    services:
+      # Spin up a PostgreSQL container for the tests
+      # This is a separate isolated database which is not your local frauddb
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_DB: frauddb_test
+        ports:
+          - 5432:5432
+        # Wait until PostgreSQL is ready before running tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      # Step 1: Check out your code onto the VM
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Install Python 3.11 (more stable than 3.13 on Ubuntu CI)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # Step 3: Cache pip packages so repeated runs are faster
+      # The cache key includes the requirements.txt hash if requirements change, cache is invalidated automatically
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+
+      # Step 4: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      # Step 5: Create test database tables
+      - name: Set up test database
+        env:
+          PGPASSWORD: testpassword
+        run: |
+          psql -h localhost -U postgres -d frauddb_test -c "
+          CREATE TABLE IF NOT EXISTS raw_transactions (
+            id SERIAL PRIMARY KEY,
+            transaction_id VARCHAR(50) UNIQUE NOT NULL,
+            transaction_type VARCHAR(50),
+            sender_phone VARCHAR(20),
+            receiver_phone VARCHAR(20),
+            sender_name VARCHAR(100),
+            receiver_name VARCHAR(100),
+            amount NUMERIC(12,2),
+            sender_balance_before NUMERIC(12,2),
+            sender_balance_after NUMERIC(12,2),
+            location VARCHAR(100),
+            device_fingerprint VARCHAR(50),
+            timestamp TIMESTAMP,
+            created_at TIMESTAMP DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS features (
+            id SERIAL PRIMARY KEY,
+            transaction_id VARCHAR(50) UNIQUE NOT NULL,
+            amount NUMERIC(12,2),
+            transaction_type VARCHAR(50),
+            hour_of_day INTEGER, day_of_week INTEGER,
+            is_night BOOLEAN, is_weekend BOOLEAN,
+            is_month_start BOOLEAN, is_month_end BOOLEAN,
+            txn_count_last_10min INTEGER, txn_count_last_1hr INTEGER,
+            txn_sum_last_10min NUMERIC(12,2), txn_sum_last_1hr NUMERIC(12,2),
+            amount_zscore NUMERIC(10,4), amount_vs_sender_mean NUMERIC(10,4),
+            is_large_amount BOOLEAN, is_new_device BOOLEAN,
+            is_new_location BOOLEAN, unique_receivers_last_1hr INTEGER,
+            type_frequency NUMERIC(8,4),
+            is_fraud BOOLEAN DEFAULT FALSE,
+            fraud_score INTEGER DEFAULT 0,
+            fraud_reasons TEXT,
+            created_at TIMESTAMP DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS prediction_log (
+            id SERIAL PRIMARY KEY,
+            transaction_id VARCHAR(50),
+            transaction_type VARCHAR(50),
+            amount NUMERIC(12,2),
+            fraud_probability NUMERIC(6,4),
+            is_fraud BOOLEAN,
+            model_version VARCHAR(50),
+            predicted_at TIMESTAMP DEFAULT NOW()
+          );
+          CREATE TABLE IF NOT EXISTS drift_alerts (
+            id SERIAL PRIMARY KEY,
+            feature_name VARCHAR(100),
+            drift_score NUMERIC(8,4),
+            alert_level VARCHAR(20),
+            detected_at TIMESTAMP DEFAULT NOW()
+          );"
+
+      # Step 6: Run only the feature tests
+      # API and model tests require running services (API server + MLflow) which are not available in CI as we test those locally
+      - name: Run feature tests
+        env:
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: frauddb_test
+          DB_USER: postgres
+          DB_PASSWORD: testpassword
+          MLFLOW_TRACKING_URI: http://127.0.0.1:5000
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9093
+          KAFKA_TOPIC: mpesa_transactions
+        run: |
+          pytest tests/test_features.py -v

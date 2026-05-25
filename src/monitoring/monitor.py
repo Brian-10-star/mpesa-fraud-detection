@@ -1,12 +1,9 @@
 # monitor.py
-# Main monitoring orchestrator. Run this file to:
+# Main monitoring platform. Running this file to:
 # 1. Load reference data (training features) and current data (recent predictions)
 # 2. Run Evidently drift detection across all 18 features
 # 3. Save an HTML drift report to data/reports/
 # 4. Log any significant drift alerts to PostgreSQL
-#
-# In production this would run on a schedule (daily or hourly)
-# and trigger an alert to the data engineering team when drift is detected.
 
 import os
 import sys

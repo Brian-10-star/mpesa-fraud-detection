@@ -1,10 +1,5 @@
 # feature_pipeline.py
-# The orchestrator — reads raw transactions from PostgreSQL,
-# runs all five feature modules on each one, and saves results
-# to the features table. This is the file you run to engineer features.
-#
-# Think of it as an assembly line:
-# raw_transaction → temporal → velocity → amount → behavioral → save
+# Reads raw transactions from PostgreSQL, runs all five feature modules on each one, and saves results to the features table.
 
 import sys
 import os
@@ -32,10 +27,8 @@ def get_db_engine():
 
 def get_unprocessed_transactions(engine):
     """
-    Fetches all transactions from raw_transactions that don't yet
-    have a corresponding row in the features table.
-    LEFT JOIN + WHERE f.transaction_id IS NULL is the standard SQL
-    pattern for finding rows in one table missing from another.
+    Fetches all transactions from raw_transactions that don't yet have a corresponding row in the features table.
+    LEFT JOIN + WHERE f.transaction_id IS NULL is the standard SQL pattern for finding rows in one table missing from another.
     """
     sql = text("""
         SELECT r.*
@@ -52,9 +45,8 @@ def get_unprocessed_transactions(engine):
 
 def process_transaction(txn: dict, engine) -> dict:
     """
-    Runs all four feature extraction modules on one transaction
-    and merges the results into a single flat dictionary.
-    The ** operator unpacks a dict — {**a, **b} merges two dicts.
+    Runs all four feature extraction modules on one transaction and merges the results into a single flat dictionary.
+    {**a, **b} merges two dicts.
     """
     temporal = extract_temporal_features(txn)
     velocity = extract_velocity_features(txn, engine)

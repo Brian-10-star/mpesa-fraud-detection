@@ -1,16 +1,10 @@
 # label_generator.py
-# Assigns fraud/not-fraud labels to transactions in the features table
-# using rule-based heuristics. This is weak supervision — a legitimate
-# industry technique for bootstrapping ML without human-labeled data.
-#
+# Assigns fraud/not-fraud labels to transactions in the features table using rule-based heuristics. This is weak supervision.
 # How it works:
 # 1. Read every feature row that hasn't been labeled yet
-# 2. Apply each fraud rule — each rule adds 1 to the fraud_score
+# 2. Apply each fraud rule and each rule adds 1 to the fraud_score
 # 3. If fraud_score >= 2, mark the transaction as fraud
 # 4. Save the label back to the features table
-#
-# Why score >= 2? One rule firing alone produces too many false positives.
-# Two or more rules firing together is a much stronger fraud signal.
 
 import os
 import sys
@@ -34,9 +28,7 @@ def apply_fraud_rules(row: dict) -> tuple[int, list[str]]:
     Applies all fraud detection rules to one feature row.
     Returns a tuple of (fraud_score, list_of_reasons).
 
-    Each rule is independent — we check all of them and accumulate
-    the score. This way, multiple weak signals combine into a strong
-    fraud verdict.
+    Each rule is independent as we check all of them and accumulate the score. This way, multiple weak signals combine into a strong fraud detector.
 
     tuple[int, list[str]] means this function returns two things:
     an integer score and a list of string reasons.
@@ -45,18 +37,16 @@ def apply_fraud_rules(row: dict) -> tuple[int, list[str]]:
     reasons = []
 
     # Rule 1: Night transaction + amount more than 3x sender's mean
-    # Fraudsters often strike at night when victims are asleep
     if row['is_night'] and row['amount_vs_sender_mean'] > 3.0:
         score += 1
         reasons.append("night_high_amount")
 
-    # Rule 2: High velocity — 5+ transactions in 10 minutes
-    # Legitimate users rarely send 5 transactions in 10 minutes
+    # Rule 2: High velocity: 5+ transactions in 10 minutes
     if row['txn_count_last_10min'] >= 5:
         score += 1
         reasons.append("high_velocity_10min")
 
-    # Rule 3: New device AND new location simultaneously
+    # Rule 3: New device and new location simultaneously
     # Using an unknown device from an unknown place = account takeover signal
     if row['is_new_device'] and row['is_new_location']:
         score += 1
@@ -69,13 +59,11 @@ def apply_fraud_rules(row: dict) -> tuple[int, list[str]]:
         reasons.append("extreme_amount_zscore")
 
     # Rule 5: Large amount (>50k KES) on a brand new device
-    # High-value transaction from an unknown device is very suspicious
     if row['is_large_amount'] and row['is_new_device']:
         score += 1
         reasons.append("large_amount_new_device")
 
-    # Rule 6: Sending to many different receivers rapidly
-    # Scammers distribute stolen funds across many accounts quickly
+    # Rule 6: Sending to many different receivers rapidly coz scammer is trying to cash out quickly
     if row['unique_receivers_last_1hr'] >= 4:
         score += 1
         reasons.append("many_unique_receivers")
@@ -86,8 +74,7 @@ def apply_fraud_rules(row: dict) -> tuple[int, list[str]]:
 def get_unlabeled_features(engine):
     """
     Fetches all feature rows where is_fraud is still NULL (never labeled).
-    We use IS NULL rather than = FALSE because we only set the column
-    when we label it — unlabeled rows have NULL, not FALSE.
+    We use IS NULL rather than = FALSE because we only set the column when we label it coz unlabeled rows have NULL, not FALSE.
     """
     sql = text("""
         SELECT * FROM features
@@ -103,8 +90,7 @@ def save_label(engine, transaction_id: str, is_fraud: bool,
                fraud_score: int, fraud_reasons: list[str]):
     """
     Updates the features row with the computed fraud label.
-    We use UPDATE not INSERT because the row already exists —
-    we're just filling in the label columns we added.
+    We use UPDATE not INSERT because the row already exists
     """
     sql = text("""
         UPDATE features

@@ -1,8 +1,6 @@
 # amount_features.py
 # Compares a transaction's amount to the sender's historical behaviour.
-# A KES 60,000 withdrawal is normal for some people, suspicious for others.
-# These features give the ML model context about whether the amount is unusual
-# FOR THIS SPECIFIC SENDER — not just in absolute terms.
+# These features should give the ML model context about whether the amount is unusual for a specific sender
 
 from sqlalchemy import text
 from datetime import datetime
@@ -10,17 +8,14 @@ from datetime import datetime
 
 def extract_amount_features(txn: dict, engine) -> dict:
     """
-    Calculates how unusual this transaction's amount is relative to
-    the sender's historical average and standard deviation.
+    Calculates how unusual this transaction's amount is relative to the sender's historical average and standard deviation.
 
     Z-score = (amount - mean) / std_dev
     A z-score of 0 means perfectly average.
-    A z-score of 3+ means this amount is 3 standard deviations above
-    the sender's average — very unusual, high fraud risk.
+    A z-score of 3+ means this amount is 3 standard deviations above the sender's average which reflects very unusual and a high fraud risk.
 
     COALESCE(x, fallback) returns fallback if x is NULL.
-    We use this because new senders have no history — we default
-    their stats to the transaction amount itself (z-score = 0).
+    We use this because new senders have no history and therefore we default their stats to the transaction amount itself (z-score = 0).
     """
     sender_phone = txn['sender_phone']
     amount = float(txn['amount'])
@@ -42,20 +37,19 @@ def extract_amount_features(txn: dict, engine) -> dict:
     mean_amount = float(result.mean_amount)
     std_amount = float(result.std_amount)
 
-    # Avoid division by zero — if std is 0, z-score is 0
+    # Avoid division by zero
     if std_amount > 0:
         amount_zscore = (amount - mean_amount) / std_amount
     else:
         amount_zscore = 0.0
 
-    # How many times larger is this than the sender's average?
-    # e.g. 3.5 means this transaction is 3.5x their usual amount
+
     if mean_amount > 0:
         amount_vs_sender_mean = amount / mean_amount
     else:
         amount_vs_sender_mean = 1.0
 
-    # Flag transactions above KES 50,000 as large — M-Pesa daily limit context
+    # Flag transactions above KES 50,000 as large
     is_large_amount = amount > 50000
 
     return {

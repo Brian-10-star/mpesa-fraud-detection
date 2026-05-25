@@ -1,6 +1,5 @@
 # producer.py
 # Generates realistic M-Pesa transactions and sends them to Kafka.
-# Uses confluent-kafka — the most stable Kafka client for Python.
 
 import json
 import random
@@ -17,7 +16,7 @@ from src.ingestion.schema import MpesaTransaction
 
 load_dotenv()
 
-# ── Realistic Kenyan data pools ──────────────────────────────────────────────
+# Realistic data pools
 
 KENYAN_NAMES = [
     "Brian Chira", "Amina Wanjiku", "Peter Otieno", "Grace Njeri",
@@ -56,9 +55,8 @@ AMOUNT_RANGES = {
 
 def delivery_report(err, msg):
     """
-    Callback function — confluent-kafka calls this after every send attempt.
+    Callback function for confluent-kafka calls this after every send attempt.
     If err is None, the message was delivered successfully.
-    This is confluent-kafka's way of confirming delivery asynchronously.
     """
     if err is not None:
         print(f"[DELIVERY FAILED] {err}")
@@ -116,8 +114,7 @@ def main():
         while True:
             txn = generate_transaction()
 
-            # produce() sends the message. We JSON-encode it to a string,
-            # then encode to bytes — Kafka only transmits bytes.
+            # produce() sends the message. We JSON-encode it to a string, then encode to bytes coz Kafka only transmits bytes.
             # on_delivery=delivery_report wires up our callback above.
             producer.produce(
                 topic,
@@ -125,8 +122,7 @@ def main():
                 on_delivery=delivery_report
             )
 
-            # poll(0) checks for delivery callbacks without blocking.
-            # Without this, delivery_report would never be called.
+            # poll(0) checks for delivery callbacks without blocking. Without this, delivery_report would never be called.
             producer.poll(0)
 
             count += 1

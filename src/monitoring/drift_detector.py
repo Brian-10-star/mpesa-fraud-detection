@@ -1,17 +1,6 @@
 # drift_detector.py
 # Custom drift detector using scipy statistical tests.
 # Replaces Evidently AI due to Python 3.13 / Pydantic v2 incompatibility.
-#
-# Uses the same statistical tests Evidently uses internally:
-# - Kolmogorov-Smirnov (KS) test for numerical features
-# - Chi-squared test for boolean/categorical features
-#
-# KS test: measures the maximum distance between two cumulative
-# distribution functions. p-value < 0.05 means significant drift.
-# drift_score = 1 - p_value (higher = more drift)
-#
-# Chi-squared test: measures whether the frequency distribution
-# of categories has changed. Same p-value interpretation.
 
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -51,7 +40,7 @@ def get_db_engine():
 
 
 def load_reference_data(engine) -> pd.DataFrame:
-    """Loads earliest 70% of labeled features as reference (training window)."""
+    """Loads earliest 70% of labeled features as reference."""
     sql = text("""
         SELECT * FROM features
         WHERE fraud_reasons IS NOT NULL
@@ -91,15 +80,12 @@ def load_current_data(engine) -> pd.DataFrame:
 def compute_drift_score(reference: pd.Series, current: pd.Series,
                         is_boolean: bool = False) -> float:
     """
-    Computes drift score for one feature.
-    Returns a score between 0.0 (no drift) and 1.0 (maximum drift).
+    Computes drift score for one feature and returns a score between 0.0 (no drift) and 1.0 (maximum drift).
 
-    For numerical: uses KS test. ks_stat is the drift score directly —
-    it represents the maximum difference between the two distributions.
+    For numerical: uses KS test. ks_stat is the drift score directly as it represents the maximum difference between the two distributions.
 
     For boolean: uses chi-squared test on value counts.
-    We convert p-value to drift score: score = 1 - p_value
-    so higher score = more drift (consistent with KS interpretation).
+    We convert p-value to drift score: score = 1 - p_value so higher score = more drift (consistent with KS interpretation).
     """
     if is_boolean:
         # Count occurrences of 0 and 1 in each dataset

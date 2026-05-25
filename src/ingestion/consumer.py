@@ -48,11 +48,8 @@ def main():
     engine = get_db_engine()
     print("PostgreSQL connected.")
 
-    # confluent-kafka Consumer config dict.
-    # auto.offset.reset=earliest: if no prior history, start from
-    # the first message ever in the topic.
-    # enable.auto.commit=True: automatically tell Kafka which messages
-    # we've processed so we don't reprocess them on restart.
+    # confluent-kafka Consumer config dict.auto.offset.reset=earliest: if no prior history, start from the first message ever in the topic.
+    # enable.auto.commit=True: automatically tell Kafka which messages are have processed so they don't reprocess them on restart.
     consumer = Consumer({
         'bootstrap.servers': os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092"),
         'group.id': 'fraud-detection-consumer',
@@ -69,15 +66,14 @@ def main():
     try:
         while True:
             # poll(1.0) waits up to 1 second for a new message.
-            # Returns None if nothing arrived in that second — we just loop again.
+            # Returns None if nothing arrived in that second and just loops again.
             msg = consumer.poll(1.0)
 
             if msg is None:
                 continue  # No message yet, keep waiting
 
             if msg.error():
-                # KafkaError._PARTITION_EOF means we've read all existing
-                # messages and are now waiting for new ones — not a real error.
+                # KafkaError._PARTITION_EOF means we've read all existing messages and are now waiting for new ones.
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     continue
                 else:

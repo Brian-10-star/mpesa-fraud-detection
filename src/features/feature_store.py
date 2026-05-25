@@ -1,6 +1,5 @@
 # feature_store.py
-# Saves a completed feature row to the features table in frauddb.
-# This is called once per transaction after all feature modules have run.
+# Saves a completed feature row to the features table in frauddb. This is called once per transaction after all feature modules have run.
 # The features table is what the ML model reads during training.
 
 from sqlalchemy import text
@@ -9,8 +8,7 @@ from sqlalchemy import text
 def save_features(engine, features: dict):
     """
     Inserts one feature row into the features table.
-    ON CONFLICT DO NOTHING handles duplicates safely —
-    if we process the same transaction_id twice, we skip it.
+    ON CONFLICT DO NOTHING handles duplicates safely by skipping the insertion if a row with the same transaction_id already exists.
     """
     sql = text("""
         INSERT INTO features (

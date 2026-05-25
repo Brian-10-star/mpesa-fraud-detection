@@ -1,8 +1,6 @@
 # alert_logger.py
 # Saves drift alerts to the drift_alerts table in frauddb.
 # Called by drift_detector.py whenever a feature shows significant drift.
-# Having alerts in PostgreSQL means they can be queried, dashboarded,
-# and trigger automated retraining workflows in production.
 
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv

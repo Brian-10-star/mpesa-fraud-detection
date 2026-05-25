@@ -1,6 +1,5 @@
 # velocity_features.py
-# Velocity = how fast transactions are happening from one sender.
-# If someone sends 10 transactions in 10 minutes, that's a red flag.
+# Velocity refers to how fast transactions are happening from one sender like if someone sends 10 transactions in 10 minutes, that's a red flag.
 # These features look back in time and count/sum recent activity.
 
 from sqlalchemy import text

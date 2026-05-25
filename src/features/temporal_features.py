@@ -1,7 +1,6 @@
 # temporal_features.py
-# Extracts time-based features from a transaction's timestamp.
-# Fraud often happens at unusual hours — 3am transactions are suspicious.
-# These features give the ML model a sense of WHEN the transaction happened.
+# Extracts time-based features from a transaction's timestamp as fraud often happens at unusual hours.
+# These features will give the ML model a sense of WHEN the transaction happened.
 
 from datetime import datetime
 

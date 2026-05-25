@@ -1,8 +1,6 @@
 # data_loader.py
-# Loads the labeled feature data from PostgreSQL into pandas DataFrames
-# ready for ML training. Separates features (X) from labels (y).
-# Also handles the train/test split — we train on 80% of data and
-# evaluate on the remaining 20% the model has never seen.
+# Loads the labeled feature data from PostgreSQL into pandas DataFrames ready for ML training. Separates features (X) from labels (y).
+# It also handles the train/test split where we train on 80% of data and evaluate on the remaining 20% the model has never seen.
 
 import pandas as pd
 from sqlalchemy import create_engine, text
@@ -22,11 +20,7 @@ def get_db_engine():
     )
     return create_engine(url)
 
-
-# These are the exact columns the ML model will use as input.
-# We exclude: id, transaction_id (identifiers not useful for ML),
-# created_at (timestamp of insertion), fraud_reasons (text, not numeric),
-# fraud_score (derived from rules, would leak the label), is_fraud (the label itself)
+# Features necessary for training the model
 FEATURE_COLUMNS = [
     'amount',
     'hour_of_day',
@@ -54,8 +48,7 @@ LABEL_COLUMN = 'is_fraud'
 def load_features(engine) -> pd.DataFrame:
     """
     Loads all labeled rows from the features table.
-    We only load rows where fraud_reasons IS NOT NULL —
-    meaning the label generator has already processed them.
+    We only load rows where fraud_reasons IS NOT NULL meaning the label generator has already processed them.
     """
     sql = text("""
         SELECT * FROM features
@@ -80,9 +73,8 @@ def prepare_data(df: pd.DataFrame):
 
     Then splits into train/test sets.
     test_size=0.2 means 20% goes to testing, 80% to training.
-    stratify=y ensures both splits have the same fraud ratio —
-    without this, we might get all fraud in training and none in test.
-    random_state=42 makes the split reproducible — same split every run.
+    stratify=y ensures both splits have the same fraud ratio as without this, we might get all fraud in training and none in test.
+    random_state=42 makes the split reproducible; same split every run.
 
     Boolean columns need to be converted to int (0/1) because
     scikit-learn models expect numeric input only.

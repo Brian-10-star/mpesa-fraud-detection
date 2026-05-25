@@ -22,6 +22,5 @@ class MpesaTransaction:
 
     def to_dict(self):
         # Converts this dataclass into a plain Python dictionary.
-        # Kafka can only send strings/bytes, not Python objects — so we
-        # convert to dict first, then JSON-encode it in producer.py.
+        # Kafka can only send strings or bytes, not Python objects so we convert have to dict first, then JSON-encode it in producer.py.
         return asdict(self)
