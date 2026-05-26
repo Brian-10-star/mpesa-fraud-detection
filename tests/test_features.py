@@ -41,7 +41,7 @@ MOCK_TXN = {
 }
 
 NIGHT_TXN = {**MOCK_TXN, 'timestamp': '2026-05-19T03:00:00'}
-WEEKEND_TXN = {**MOCK_TXN, 'timestamp': '2026-05-18T10:00:00'}  # Sunday
+WEEKEND_TXN = {**MOCK_TXN, 'timestamp': '2026-05-17T10:00:00'}  # Sunday
 
 
 # Temporal feature tests
@@ -103,11 +103,9 @@ def test_temporal_booleans_are_bool_type():
 @pytest.fixture
 def db_engine():
     """
-    pytest fixture — creates a database engine shared across tests.
-    A fixture is a reusable setup function. Any test that declares
-    'db_engine' as a parameter automatically gets this engine injected.
-    scope='module' means the engine is created once per test file,
-    not once per test — more efficient.
+    pytest fixture creates a database engine shared across tests.
+    A fixture is a reusable setup function. Any test that declares 'db_engine' as a parameter automatically gets this engine injected.
+    scope='module' means the engine is created once per test file, not once per test.
     """
     from sqlalchemy import create_engine
     from dotenv import load_dotenv

@@ -90,8 +90,7 @@ def test_prediction_returns_binary(loaded_model, sample_features):
 
 def test_fraud_transaction_scored(loaded_model):
     """
-    A clearly fraudulent transaction (3am, large amount, new device,
-    high velocity) should receive a high fraud probability.
+    A clearly fraudulent transaction (3am, large amount, new device, high velocity) should receive a high fraud probability.
     This tests that the model learned meaningful patterns.
     """
     fraud_features = pd.DataFrame([{

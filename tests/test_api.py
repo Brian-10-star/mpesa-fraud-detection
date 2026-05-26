@@ -50,9 +50,7 @@ FRAUD_TRANSACTION = {
 @pytest.fixture(scope='module')
 def client():
     """
-    Creates an httpx client for all tests in this file.
-    httpx.Client is like requests.Session — reuses the TCP connection
-    across multiple requests for efficiency.
+    Creates an httpx client for all tests in this file. httpx.Client is like requests.Session which reuses the TCP connection across multiple requests for efficiency.
     """
     with httpx.Client(base_url=BASE_URL, timeout=30.0) as c:
         yield c
