@@ -1,0 +1,16 @@
+# docker-build.yml
+# Placeholder workflow.
+name: Docker Build
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Docker build placeholder
+        run: echo "Docker build workflow placeholder — not yet implemented"
