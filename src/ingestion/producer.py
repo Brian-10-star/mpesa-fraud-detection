@@ -18,21 +18,23 @@ load_dotenv()
 
 # Realistic data pools
 
-KENYAN_NAMES = [
-    "Brian Chira", "Amina Wanjiku", "Peter Otieno", "Grace Njeri",
-    "Samuel Kamau", "Fatuma Achieng", "David Mwangi", "Joyce Waithera",
-    "James Kipchoge", "Mary Wambui", "Hassan Abdi", "Lilian Adhiambo",
-    "Kevin Mutua", "Esther Chebet", "Moses Odhiambo", "Purity Karimi",
-    "Vincent Omondi", "Beatrice Nkirote", "Emmanuel Waweru", "Agnes Mumbi"
+CUSTOMER_NAMES = [
+    "Michael Kinyua", "Amina Wanjiku", "Peter Otieno", "Grace Njeri", "Stacy Wairimu", "Florence Hamisi",
+    "Samuel Kamau", "Fatuma Achieng", "David Mwangi", "Joyce Waithera", "Abdulah Hassan",
+    "James Kipchoge", "Mary Wambui", "Hassan Abdi", "Lilian Adhiambo", "Timothy Mutiso",
+    "Kevin Mutua", "Esther Chebet", "Moses Odhiambo", "Purity Karimi", "Christopher Njoroge",
+    "Vincent Omondi", "Beatrice Nkirote", "Emmanuel Waweru", "Agnes Mumbi", "Christine Ndungu",
+    "Dennis Kiptoo", "Alice Wanjiru", "Brian Mwangi", "Carolyn Njeri", "Anthony Kimani", "Faith Wambui", "Joseph Mwangi", "Francisca Achieng", "Mark Kiprono", "Ruth Njeri", "Eric Mwangi", "Jane Wairimu", "Simon Karanja", "Nancy Wambui", "Paul Mwangi", "Catherine Njeri", "Andrew Kipchoge", "Rose Wanjiku", "Daniel Mwangi", "Martha Njeri", "Kevin Otieno", "Alice Wairimu", "Michael Mwangi", "Grace Achieng", "Samuel Kamau", "Fatuma Achieng", "David Mwangi", "Joyce Waithera", "Abdul Majid", "Jimmy Kiprop", "Maryanne Mwendwa", "Valentine Wambui", "Lilian Adhiambo", "Timothy Mutiso", "Kevin Mutua"
 ]
 
-KENYAN_PHONES = [f"07{random.randint(10,99)}{random.randint(100000,999999)}"
+CUSTOMER_NUMBER = [f"07{random.randint(10,99)}{random.randint(100000,999999)}"
                  for _ in range(200)]
 
 LOCATIONS = [
-    "Nairobi CBD", "Westlands", "Kibera", "Kasarani", "Embakasi",
-    "Thika", "Mombasa", "Kisumu", "Nakuru", "Eldoret",
-    "Machakos", "Nyeri", "Meru", "Kakamega", "Garissa"
+    "Nairobi CBD", "Westlands", "Kibera", "Kasarani", "Embakasi", "Kiambu", "Limuru", "Juja",
+    "Thika", "Mombasa", "Kisumu", "Nakuru", "Eldoret", "Lamu", "Githunguri", "Narok", "Busia", "Embu",
+    "Machakos", "Nyeri", "Meru", "Kakamega", "Garissa", "Homabay", "Kitale", "Kisii", "Vihiga", "Bungoma", "Murang'a", "Kericho", "Kajiado", "Siaya", "Ahero", "Chuka", "Turkana", "Marsabit", "Kapenguria", "Kitui", "Lodwar", "Ruiru", "Runda", "Karen", "Syokimau", "Ngong'", "Dandora", "Mathare", "Githurai", "Kahawa Sukari", "Kitusuru", "Kileleshwa", "Naivasha", "Nanyuki", "Nyahururu",
+    "Moyale", "Iten", "Kapsabet", "Bomet", "Maralal"
 ]
 
 TRANSACTION_TYPES = [
@@ -68,10 +70,10 @@ def generate_transaction():
     balance_before = round(random.uniform(amount, 150000), 2)
     balance_after = round(balance_before - amount, 2)
 
-    sender_name = random.choice(KENYAN_NAMES)
-    receiver_name = random.choice(KENYAN_NAMES)
+    sender_name = random.choice(CUSTOMER_NAMES)
+    receiver_name = random.choice(CUSTOMER_NAMES)
     while receiver_name == sender_name:
-        receiver_name = random.choice(KENYAN_NAMES)
+        receiver_name = random.choice(CUSTOMER_NAMES)
 
     return MpesaTransaction(
         transaction_id=f"TXN-{uuid.uuid4().hex[:12].upper()}",
