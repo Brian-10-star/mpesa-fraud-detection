@@ -1,8 +1,48 @@
 # M-Pesa Fraud Detection ML Platform
 
-An end-to-end machine learning platform for real-time fraud detection on M-Pesa transactions. Built with a Kenyan fintech context using realistic M-Pesa transaction types, Kenyan names, KES amounts, and location data across 15 Kenyan cities.
+![Python](https://img.shields.io/badge/Python-3.13-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-336791)
+![Kafka](https://img.shields.io/badge/Apache_Kafka-7.4.0-231F20)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115.5-009688)
+![MLflow](https://img.shields.io/badge/MLflow-2.18.0-0194E2)
+![CI](https://github.com/Brian-10-star/mpesa-fraud-detection/actions/workflows/ci.yml/badge.svg)
 
+## Project Highlights
+
+- Built an end-to-end M-Pesa fraud detection platform using Kafka, PostgreSQL, FastAPI, MLflow, and Docker
+- Simulated realistic transaction streams across 58 Kenyan cities
+- Engineered 20 fraud features spanning behavioral, temporal, velocity, and amount patterns
+- Added model monitoring, prediction logging, and drift detection
+- Automated testing and CI validation using GitHub Actions
+
+An end-to-end ML platform for near real-time fraud detection on M-Pesa transactions. This project demonstrates production-style data engineering across streaming ingestion, feature engineering, model training, API serving, drift monitoring, and automated testing, built with a Kenyan fintech context using realistic M-Pesa transaction types, Kenyan names, KES amounts, and location data across 58 Kenyan cities.
+
+---
+
+## Platform Preview
+
+**Streamlit Dashboard**
 ![Dashboard](docs/dashboard.png)
+
+**MLflow Experiment Tracking**
+![MLflow](docs/mlflow.png)
+
+**FastAPI Interactive Docs**
+![API Docs](docs/api.png)
+
+---
+
+## Business Problem
+
+M-Pesa processes millions of financial transactions daily. Fraud patterns, including velocity attacks, account takeovers, and suspicious high-value transfers, evolve continuously and require automated detection systems that can score transactions in near real time.
+
+This platform detects:
+
+- Unusual spending behaviour relative to a sender's historical baseline
+- Rapid transaction bursts within short time windows
+- Account takeover signals via new device and new location combinations
+- Statistically extreme amounts using z-score analysis
 
 ---
 
@@ -11,34 +51,9 @@ An end-to-end machine learning platform for real-time fraud detection on M-Pesa 
 The platform is built in 8 layers, each feeding the next:
 
 ```
-Kafka Producer
-     |
-     v
-mpesa_transactions (Kafka Topic, port 9093)
-     |
-     v
-Consumer --> raw_transactions (PostgreSQL)
-     |
-     v
-Feature Pipeline --> features table (20 features, 5 modules)
-     |
-     v
-Label Generator --> fraud labels (rule-based heuristics)
-     |
-     v
-Training Pipeline --> MLflow Experiment Tracking
-     |
-     v
-Model Registry (mpesa-fraud-detector v2)
-     |
-     v
-FastAPI (port 8000) --> prediction_log table
-     |
-     v
-Drift Monitor --> drift_alerts table + HTML reports
-     |
-     v
-Streamlit Dashboard (port 8501)
+## Architecture
+
+![Architecture](docs/architecture.jpeg)
 ```
 
 ---
@@ -111,6 +126,9 @@ mpesa-fraud-detection/
 |   `-- test_api.py             # 8 tests
 |-- data/
 |   `-- reports/                # HTML drift reports (auto-generated)
+|-- .github/
+|   `-- workflows/
+|       `-- ci.yml              # GitHub Actions CI
 |-- docker-compose.yml
 |-- requirements.txt
 `-- .env.example
@@ -118,15 +136,15 @@ mpesa-fraud-detection/
 
 ---
 
-## Database Schema (frauddb)
+## Database Schema
 
-Five tables in PostgreSQL:
+Five tables in PostgreSQL (`frauddb`):
 
 **raw_transactions** - every transaction received from Kafka
 - 14 columns: transaction_id, type, sender/receiver phone and name, amount, balance before/after, location, device_fingerprint, timestamp
 
-**features** - engineered feature row per transaction
-- 20 features: temporal (6), velocity (4), amount (3), behavioral (4), plus fraud label columns
+**features** - one engineered feature row per transaction
+- 20 features across 5 modules plus fraud label columns
 
 **prediction_log** - every prediction made by the API
 - transaction_id, fraud_probability, is_fraud, model_version, predicted_at
@@ -135,6 +153,8 @@ Five tables in PostgreSQL:
 - feature_name, drift_score, alert_level, detected_at
 
 **model_registry_meta** - local record of champion model version
+
+Indexes are created on `transaction_id`, `sender_phone`, and `timestamp` to improve time-window lookups used by velocity feature calculations.
 
 ---
 
@@ -150,13 +170,13 @@ Five tables in PostgreSQL:
 | Behavioral | is_new_device, is_new_location, unique_receivers_last_1hr, type_frequency |
 | Identity | amount, transaction_type (passed through to model) |
 
-**Velocity** features query `raw_transactions` for each sender's recent history. **Amount** features compute a z-score by comparing the transaction amount against the sender's historical mean and standard deviation. **Behavioral** features detect account takeover signals: new device fingerprints, new locations, and high receiver diversity within one hour.
+**Velocity** features query `raw_transactions` for each sender's recent history within rolling time windows. **Amount** features compute a z-score by comparing the transaction amount against the sender's historical mean and standard deviation. **Behavioral** features detect account takeover signals: new device fingerprints, new locations, and high receiver diversity within one hour.
 
 ---
 
 ## Fraud Labeling
 
-Labels are generated using rule-based heuristics (weak supervision). A transaction is labeled fraud if 2 or more of the following rules fire:
+Labels are generated using rule-based weak supervision, a standard industry technique for bootstrapping ML labels without human-annotated ground truth data. A transaction is labeled fraud if 2 or more of the following rules fire:
 
 | Rule | Signal |
 |---|---|
@@ -167,7 +187,7 @@ Labels are generated using rule-based heuristics (weak supervision). A transacti
 | Amount > KES 50,000 + new device | High-value unknown device |
 | 4+ unique receivers in last 1 hour | Fund distribution pattern |
 
-This is a legitimate industry technique called weak supervision, used to bootstrap ML labels without human-labeled ground truth data.
+Every rule is documented. Every label includes the rules that fired, producing an auditable label trail.
 
 **Results on 339 transactions:**
 - Fraud: 34 (10.0%)
@@ -177,19 +197,15 @@ This is a legitimate industry technique called weak supervision, used to bootstr
 
 ## ML Training
 
-Three models trained on SMOTE-balanced data (22 fraud upsampled to 188 to match 188 legitimate):
+The focus of this project is end-to-end systems engineering, not benchmark model performance. Labels were derived from the same behavioral signals because labels are generated from rules sharing information with model inputs, evaluation scores are influenced by target leakage and should not be interpreted as real-world predictive performance. All experiments are tracked in MLflow for full reproducibility.
 
-| Model | Accuracy | Precision | Recall | F1 | ROC-AUC |
-|---|---|---|---|---|---|
-| Logistic Regression | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| Random Forest | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
-| XGBoost | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
+Training data was split 80/20. SMOTE was applied to the training set to address class imbalance, upsampling the minority fraud class to match the majority class count. Three models were trained and compared:
 
-**Note on perfect scores:** The labels were generated by rules derived from the same features the model trains on. The model learns to replicate the rules exactly, producing perfect metrics. In a production system with human-labeled ground truth, scores would be lower and more informative. The value here is the complete pipeline architecture, not the metric values.
+- Logistic Regression
+- Random Forest
+- XGBoost
 
-All experiments tracked in MLflow. Champion model registered as `mpesa-fraud-detector v2`.
-
-![MLflow](docs/mlflow.png)
+All experiments, parameters, and metrics are logged in MLflow. The champion model was selected and registered as `mpesa-fraud-detector v2` based on recall, prioritising fraud capture over false positive reduction.
 
 ---
 
@@ -237,8 +253,6 @@ curl -X POST http://127.0.0.1:8000/predict \
   "message": "FRAUD DETECTED"
 }
 ```
-
-![API Docs](docs/api.png)
 
 ---
 
@@ -290,7 +304,7 @@ Run locally:
 pytest tests/ -v
 ```
 
-GitHub Actions CI runs `tests/test_features.py` automatically on every push to main using an isolated PostgreSQL test database.
+GitHub Actions CI runs `tests/test_features.py` automatically on every push to `main` using an isolated PostgreSQL service container, confirming feature engineering correctness in a clean environment with each change.
 
 ---
 
@@ -312,7 +326,24 @@ Traffic volume adjusts by hour of day: LOW (00:00-05:59), HIGH (07:00-08:59 and 
 
 ---
 
+
+## Quick Start
+
+```bash
+git clone https://github.com/Brian-10-star/mpesa-fraud-detection.git
+cd mpesa-fraud-detection
+
+docker-compose up -d
+
+python src/ingestion/producer.py
+python src/ingestion/consumer.py
+
+python src/training/train.py
+```
+
 ## Setup and Running
+
+**Environment:** Tested on Windows 11 with WSL2 (Ubuntu). Python scripts run from PowerShell on Windows. PostgreSQL is installed on the Windows host.
 
 ### Prerequisites
 
@@ -384,15 +415,17 @@ python src/monitoring/monitor.py
 
 ## Key Engineering Decisions
 
-**confluent-kafka over kafka-python:** kafka-python 2.0.2 has a known incompatibility with Python 3.13 (invalid file descriptor error on the selector). confluent-kafka 2.6.1 is the actively maintained library used in production Kafka deployments.
+**confluent-kafka over kafka-python:** kafka-python 2.0.2 has a known incompatibility with Python 3.13 (invalid file descriptor error on the selector). confluent-kafka 2.6.1 is the actively maintained library used in production Kafka deployments and is the correct choice for Python 3.13 environments.
 
-**Weak supervision for labels:** No human-labeled fraud data exists for this dataset. Rule-based heuristics combining velocity, timing, and device signals are a standard industry technique for bootstrapping ML labels. Every rule is documented and every label includes the rules that fired.
+**Weak supervision for labels:** No human-labeled fraud data exists for this dataset. Rule-based heuristics combining velocity, timing, and device signals are a standard industry technique for bootstrapping ML labels. Every rule is documented and every label includes the rules that fired, producing a fully auditable labeling pipeline.
 
-**scipy over Evidently AI for drift detection:** Evidently 0.4.x through 0.5.x has a Pydantic v2 / Python 3.13 incompatibility. The scipy KS test and chi-squared test are the same statistical methods Evidently uses internally, implemented directly with full control over thresholds and scoring logic.
+**scipy over Evidently AI for drift detection:** Evidently 0.4.x through 0.5.x has a Pydantic v2 incompatibility on Python 3.13. The scipy KS test and chi-squared test are the same statistical methods Evidently uses internally, implemented directly with full control over thresholds and scoring logic. No functionality was lost.
 
-**PostgreSQL as feature store:** Feast and dedicated feature stores are deferred. PostgreSQL provides ACID guarantees, complex SQL queries across feature history, and zero additional infrastructure.
+**PostgreSQL as feature store:** Feast and dedicated feature stores are deferred. PostgreSQL provides ACID guarantees, complex SQL queries across feature history, and zero additional infrastructure for a single-node deployment.
 
-**localhost over WSL IP for PostgreSQL:** Python scripts run on Windows where PostgreSQL is installed. Using localhost eliminates the dynamic WSL IP address that changes on every system restart.
+**localhost over WSL IP for PostgreSQL:** Python scripts run on Windows where PostgreSQL is installed. Using localhost eliminates the dynamic WSL IP address that changes on every system restart, making the configuration stable across sessions.
+
+**Kafka on port 9093:** Port 9093 was chosen to avoid conflict with an existing Kafka instance from a prior project running on port 9092.
 
 ---
 
@@ -402,5 +435,6 @@ python src/monitoring/monitor.py
 BSc Computer Science, Egerton University (Expected 2028)
 Nairobi, Kenya
 
+Email: chirabrian1@gmail.com
 GitHub: [github.com/Brian-10-star](https://github.com/Brian-10-star)
 LinkedIn: [linkedin.com/in/mbuguabrian](https://www.linkedin.com/in/mbuguabrian)
