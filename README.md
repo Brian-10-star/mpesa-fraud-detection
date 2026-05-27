@@ -50,11 +50,7 @@ This platform detects:
 
 The platform is built in 8 layers, each feeding the next:
 
-```
-## Architecture
-
 ![Architecture](docs/architecture.jpeg)
-```
 
 ---
 
