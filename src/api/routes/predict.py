@@ -1,12 +1,10 @@
 # routes/predict.py
-# POST /predict — the core endpoint.
-# Accepts a transaction, engineers its features, runs the model,
-# logs the prediction, and returns the fraud probability.
-#
-# This is what a payment system calls in real time before approving
-# a transaction — the whole flow must complete in milliseconds.
+# POST /predict is the core endpoint.
+# Accepts a transaction, engineers its features, runs the model, logs the prediction, and returns the fraud probability.
+# This is what a payment system calls in real time before approving a transaction.
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from src.api.auth import verify_api_key
 from src.api.schemas import TransactionRequest, PredictionResponse
 from src.api.model_loader import get_model, get_model_version, is_model_loaded
 from src.api.prediction_logger import log_prediction
@@ -43,7 +41,7 @@ def get_db_engine():
 
 
 @router.post("/predict", response_model=PredictionResponse)
-def predict(transaction: TransactionRequest):
+def predict(transaction: TransactionRequest, _: str = Depends(verify_api_key)):
     """
     Main prediction endpoint.
 
