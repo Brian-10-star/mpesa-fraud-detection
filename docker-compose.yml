@@ -29,6 +29,65 @@ services:
       - fraud-net
     restart: unless-stopped
 
+  mlflow:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: fraud-mlflow
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /app/mlruns --default-artifact-root /app/mlartifacts
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./mlruns:/app/mlruns
+      - ./mlartifacts:/app/mlartifacts
+    networks:
+      - fraud-net
+    restart: unless-stopped
+
+  fastapi:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: fraud-fastapi
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: frauddb
+      DB_USER: postgres
+      DB_PASSWORD: 030426Bc
+      MLFLOW_TRACKING_URI: http://fraud-mlflow:5000
+      API_KEY: mpesa-fraud-key-2026
+    depends_on:
+      - mlflow
+    networks:
+      - fraud-net
+    restart: unless-stopped
+
+  streamlit:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    container_name: fraud-streamlit
+    command: streamlit run src/dashboard/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    environment:
+      DB_HOST: host.docker.internal
+      DB_PORT: 5432
+      DB_NAME: frauddb
+      DB_USER: postgres
+      DB_PASSWORD: 030426Bc
+      MLFLOW_TRACKING_URI: http://fraud-mlflow:5000
+      API_KEY: mpesa-fraud-key-2026
+    depends_on:
+      - mlflow
+    networks:
+      - fraud-net
+    restart: unless-stopped
+
 networks:
   fraud-net:
     driver: bridge

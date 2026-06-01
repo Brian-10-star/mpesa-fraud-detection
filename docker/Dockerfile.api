@@ -1,0 +1,39 @@
+# Dockerfile.api
+# Single Dockerfile used by the mlflow, fastapi, and streamlit services.
+# All three services share the same Python environment. The only difference between them is the command that runs at container startup, which is specified in docker-compose.yml under each service's "command" field.
+
+# Start from the official Python 3.11 slim image.
+# We use 3.11 instead of 3.13 because mlflow and several ML libraries have better-tested Docker support on 3.11. Slim means no unnecessary system packages, keeping the image small.
+FROM python:3.11-slim
+
+# Set the working directory inside the container.
+# All subsequent commands run from this path.
+WORKDIR /app
+
+# Install system-level dependencies that Python packages need to compile.
+# libpq-dev: required by psycopg2 to talk to PostgreSQL.
+# gcc: C compiler required by some Python packages during pip install.
+# --no-install-recommends: skip optional packages to keep the image small.
+# rm -rf /var/lib/apt/lists/*: delete apt cache after installing to reduce image size.
+RUN apt-get update && apt-get install -y \
+    libpq-dev \
+    gcc \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements first, before copying the rest of the code.
+# Docker builds in layers. If requirements.txt has not changed, Docker reuses the cached pip install layer and skips reinstalling everything.
+# This makes rebuilds much faster during development.
+COPY requirements.txt .
+
+# Install all Python dependencies.
+# --no-cache-dir: do not store the pip download cache inside the image so as to keep the final image smaller.
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the entire project into the container.
+# The dot on the left is local project root.
+# The dot on the right is /app inside the container.
+COPY . .
+
+# Set PYTHONPATH so that imports like "from src.api.main import app" resolve correctly inside the container, the same way they do locally when you run scripts from the project root.
+ENV PYTHONPATH=/app
