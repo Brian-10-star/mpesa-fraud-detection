@@ -11,7 +11,7 @@
 # Every time you push to GitHub, this workflow spins up a fresh Ubuntu machine, installs your dependencies, and runs your tests.
 # Pass = green checkmark. Fail = red cross + email notification.
 
-name: CI — Fraud Detection Tests
+name: CI - Fraud Detection Tests
 
 on:
   push:
