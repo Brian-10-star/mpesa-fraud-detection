@@ -11,7 +11,7 @@
 # What is missing and why:
 # A full CD pipeline would also SSH into a server and run docker-compose pull followed by docker-compose up -d to deploy the new image automatically. That step requires a live server such as Oracle Cloud or AWS EC2. The build and push steps here demonstrate the complete CD pattern. The deploy step is documented below as a commented block showing exactly what it would contain.
 
-name: CD: Build and Push Docker Image
+name: "CD: Build and Push Docker Image
 
 on:
   workflow_run:
