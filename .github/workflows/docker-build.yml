@@ -1,16 +1,102 @@
 # docker-build.yml
-# Placeholder workflow.
-name: Docker Build
+# CD pipeline: builds the FastAPI Docker image and pushes it to Docker Hub on every push to main that passes CI tests.
+
+# How this connects to ci.yml:
+# This workflow does not run independently. It only triggers after the CI test job in ci.yml completes successfully. This is enforced by the "workflow_run" trigger below. This means broken code can never produce a published image.
+#
+# What "CD" means here:
+# Continuous Delivery means every passing commit automatically produces a deployable artifact. That artifact is a Docker image on Docker Hub.
+# Any server anywhere can pull and run it with:   docker pull brian830/mpesa-fraud-detection-fastapi:latest
+#
+# What is missing and why:
+# A full CD pipeline would also SSH into a server and run docker-compose pull followed by docker-compose up -d to deploy the new image automatically. That step requires a live server such as Oracle Cloud or AWS EC2. The build and push steps here demonstrate the complete CD pattern. The deploy step is documented below as a commented block showing exactly what it would contain.
+
+name: CD: Build and Push Docker Image
 
 on:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: ["CI — Fraud Detection Tests"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
-  build:
+  build-and-push:
+    # Only run if the CI workflow actually passed.
+    # without this check, this job would also run when CI fails.
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Check out the code so the Dockerfile is available
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Docker build placeholder
-        run: echo "Docker build workflow placeholder — not yet implemented"
+
+      # Step 2: Log in to Docker Hub using the secrets we added.
+      # actions/docker-login is the official GitHub Action for this.
+      # It reads DOCKERHUB_USERNAME and DOCKERHUB_TOKEN from repository secrets.
+      # Secrets are never visible in logs, GitHub masks them automatically.
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Step 3: Set up Docker Buildx.
+      # Buildx is the modern Docker build engine. It supports building images for multiple CPU architectures and has better caching.
+      # It is used here because it is the recommended approach with the docker/build-push-action below.
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Step 4: Build the image and push it to Docker Hub.
+      # context: . means the build context is the project root, same as running docker-compose up --build from the project folder.
+      # file: points to our shared Dockerfile.
+      # push: true means after building, immediately push to Docker Hub.
+      # tags: defines the image name and tag on Docker Hub.
+      # Two tags are created:
+      #   :latest always points to the most recent successful build.
+      #   :sha-xxxxxx is a unique tag for this exact commit, so you can always roll back to any previous version by commit hash.
+      - name: Build and push FastAPI image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.api
+          push: true
+          tags: |
+            brian830/mpesa-fraud-detection-fastapi:latest
+            brian830/mpesa-fraud-detection-fastapi:sha-${{ github.sha }}
+          cache-from: type=registry,ref=brian830/mpesa-fraud-detection-fastapi:buildcache
+          cache-to: type=registry,ref=brian830/mpesa-fraud-detection-fastapi:buildcache,mode=max
+
+      # Step 5: Print the image URL so it is visible in the Actions log.
+      - name: Print image URL
+        run: |
+          echo "Image pushed to Docker Hub:"
+          echo "  brian830/mpesa-fraud-detection-fastapi:latest"
+          echo "  brian830/mpesa-fraud-detection-fastapi:sha-${{ github.sha }}"
+          echo ""
+          echo "Pull with:"
+          echo "  docker pull brian830/mpesa-fraud-detection-fastapi:latest"
+
+      # DEPLOY STEP: what this would contain with a live server
+      # Uncomment and configure when a server is available.
+      #
+      # - name: Deploy to server
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.SERVER_HOST }}
+      #     username: ${{ secrets.SERVER_USER }}
+      #     key: ${{ secrets.SERVER_SSH_KEY }}
+      #     script: |
+      #       cd /home/ubuntu/mpesa-fraud-detection
+      #       docker-compose pull fastapi
+      #       docker-compose up -d fastapi
+      #       echo "Deployment complete."
+      #
+      # This step would require three additional repository secrets:
+      #   SERVER_HOST: the public IP address of the server
+      #   SERVER_USER: the SSH username, usually ubuntu on Oracle Cloud
+      #   SERVER_SSH_KEY: the private SSH key for the server
+      # Oracle Cloud always-free tier provides two VMs at no cost, making it the recommended choice for adding this step later.
