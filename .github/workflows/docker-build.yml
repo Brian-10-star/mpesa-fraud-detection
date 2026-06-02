@@ -15,7 +15,8 @@ name: "CD: Build and Push Docker Image
 
 on:
   workflow_run:
-    workflows: ["CI - Fraud Detection Tests"]
+    workflows:
+      - "CI - Fraud Detection Tests"
     types:
       - completed
     branches:
