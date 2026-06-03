@@ -1,30 +1,28 @@
 # main.py
 # FastAPI application entry point.
 # Creates the app, loads the model at startup, and registers all routes.
-#
-# @app.on_event("startup") runs load_model() automatically when the
-# API server starts — so the model is ready before the first request arrives.
-# This is FastAPI's lifecycle hook system.
 
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from src.api.model_loader import load_model
 from src.api.routes import predict, health, metrics, model_info
+from src.api.logger import get_logger
 import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
+logger = get_logger(__name__, service="fastapi")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Runs on startup — load model before accepting requests
-    print("Loading ML model...")
+    # Runs on startup
+    logger.info("api_starting")
     load_model()
-    print("API ready.")
+    logger.info("api_ready")
     yield
-    # Runs on shutdown — cleanup if needed
-    print("API shutting down.")
+    # Runs on shutdown: cleanup if needed
+    logger.info("api_shutting_down")
 
 
 app = FastAPI(
