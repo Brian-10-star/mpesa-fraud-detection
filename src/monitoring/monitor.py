@@ -1,5 +1,6 @@
 # monitor.py
-# Main monitoring pipeline. Loads reference and current data, runs drift detection across all features, saves an HTML report, and logs drift alerts to PostgreSQL.
+# Main monitoring pipeline. Runs drift detection and triggers retraining automatically when significant drift is detected.
+# This is the MLOps loop: detect drift, retrain, serve new model.
 
 import os
 import sys
@@ -10,6 +11,7 @@ from src.monitoring.drift_detector import (
     get_db_engine, load_reference_data,
     load_current_data, run_drift_detection, detect_and_alert
 )
+from src.monitoring.retraining_trigger import evaluate_and_trigger
 from src.api.logger import get_logger
 
 logger = get_logger(__name__, service="monitoring")
@@ -42,18 +44,34 @@ def main():
         "features_checked": len(reference.columns)
     })
 
-    # Run drift detection
+    # Run drift detection across all 18 features
     drift_results, report_path = run_drift_detection(reference, current)
-    # Log alerts for drifted features
+
+    # Log alerts for features that exceed drift thresholds
     alerted = detect_and_alert(engine, drift_results)
 
-    print(f"\nDrift results per feature:")
-    print("-" * 40)
-
-    logger.info("drift_monitoring_complete", extra={
+    logger.info("drift_detection_complete", extra={
         "features_checked": len(drift_results),
         "drift_alerts_logged": alerted,
         "report_path": report_path
+    })
+
+    # Evaluate drift results and trigger retraining if needed.
+    # This call logs the decision to retraining_log whether or not retraining actually runs, giving a full audit trail.
+    retrained = evaluate_and_trigger(drift_results)
+
+    if retrained:
+        logger.warning("retraining_complete_restart_required", extra={
+            "message": (
+                "New model registered in MLflow. "
+                "Restart FastAPI container to load the new model version: "
+                "docker-compose restart fastapi"
+            )
+        })
+
+    logger.info("monitoring_pipeline_complete", extra={
+        "drift_alerts": alerted,
+        "retraining_triggered": retrained
     })
 
 
