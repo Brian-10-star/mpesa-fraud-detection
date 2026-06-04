@@ -50,10 +50,25 @@ class HealthResponse(BaseModel):
 
 
 class MetricsResponse(BaseModel):
+    # All-time counts
     total_predictions: int
     fraud_detected: int
     legitimate: int
     fraud_rate: float
+
+    # Last 24 hours
+    fraud_rate_24h: float
+    total_last_24h: int
+    fraud_last_24h: int
+
+    # Latency percentiles in milliseconds computed from live requests only.
+    # None when no latency data exists yet, for example right after startup.
+    p50_latency_ms: Optional[float]
+    p95_latency_ms: Optional[float]
+    p99_latency_ms: Optional[float]
+
+    # Predictions per minute over the last hour
+    throughput_per_minute: float
 
 
 class ModelInfoResponse(BaseModel):

@@ -116,7 +116,8 @@ def predict(transaction: TransactionRequest, _: str = Depends(verify_api_key)):
         amount=txn['amount'],
         fraud_probability=fraud_probability,
         is_fraud=is_fraud,
-        model_version=get_model_version()
+        model_version=get_model_version(),
+        latency_ms=latency_ms
     )
 
     logger.info("prediction_complete", extra={
