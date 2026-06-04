@@ -1,8 +1,6 @@
 # schemas.py
 # Defines the data shapes for API requests and responses using Pydantic.
-# Pydantic validates incoming data automatically — if a required field
-# is missing or the wrong type, FastAPI returns a clear error message
-# before our code even runs. This prevents bad data from reaching the model.
+# Pydantic validates incoming data automatically where if a required field is missing or the wrong type, FastAPI returns a clear error message before the code even runs to prevents bad data from reaching the model.
 
 from pydantic import BaseModel
 from typing import Optional
@@ -12,8 +10,6 @@ from datetime import datetime
 class TransactionRequest(BaseModel):
     """
     The shape of a transaction sent to POST /predict.
-    Every field here must be present in the request body.
-    The types are enforced — sending a string for amount raises an error.
     """
     transaction_id: str
     transaction_type: str
@@ -32,7 +28,7 @@ class TransactionRequest(BaseModel):
 class PredictionResponse(BaseModel):
     """
     The shape of what POST /predict returns.
-    fraud_probability: 0.0 to 1.0 — how likely this is fraud
+    fraud_probability: 0.0 to 1.0 shows how likely this is fraud
     is_fraud: True if probability >= 0.5
     model_version: which model made this prediction
     """
