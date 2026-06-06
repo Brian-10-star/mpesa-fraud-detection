@@ -50,7 +50,7 @@ This platform detects:
 
 The platform is built in 8 layers, each feeding the next:
 
-![Architecture](docs/architecture.jpeg)
+![Architecture](docs/architecture.svg)
 
 ---
 
@@ -172,7 +172,7 @@ Indexes are created on `transaction_id`, `sender_phone`, and `timestamp` to impr
 
 ## Fraud Labeling
 
-Labels are generated using rule-based weak supervision, a standard industry technique for bootstrapping ML labels without human-annotated ground truth data. A transaction is labeled fraud if 2 or more of the following rules fire:
+Labels are generated using rule-based weak supervision, a standard industry technique for bootstrapping ML labels without human-annotated ground truth data. A transaction is labeled as a fraud if 2 or more of the following rules fire:
 
 | Rule | Signal |
 |---|---|
@@ -227,7 +227,7 @@ curl -X POST http://127.0.0.1:8000/predict \
     "transaction_type": "Send Money",
     "sender_phone": "0712345678",
     "receiver_phone": "0798765432",
-    "sender_name": "Brian Chira",
+    "sender_name": "Grace Njeri",
     "receiver_name": "Amina Wanjiku",
     "amount": 75000.00,
     "sender_balance_before": 80000.00,
