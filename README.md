@@ -428,7 +428,7 @@ python src/monitoring/monitor.py
 ## Author
 
 **Brian Mbugua Chira**
-BSc Computer Science, Egerton University (Expected 2028)
+BSc Computer Science, Egerton University
 Nairobi, Kenya
 
 Email: chirabrian1@gmail.com
